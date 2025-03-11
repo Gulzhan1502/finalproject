@@ -2,125 +2,37 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+df = pd.read_csv("air_quality_data.csv")
 
-# =============================================
-# Part I: Data Loading and Initial Processing
-# =============================================
-
-# Read data using pandas
-file_path = "Sensor_Data.csv"
-df = pd.read_csv(file_path)
-
-# Convert columns to appropriate data types
-df['Temperature (°C)'] = df['Temperature (°C)'].astype(float)
-df['Humidity (%)'] = df['Humidity (%)'].astype(float)
-df['Pressure (hPa)'] = df['Pressure (hPa)'].astype(float)
-
-# Task 2: Store Humidity and Pressure for S101 as tuples
-s101_data = df[df['Sensor ID'] == 'S101'][['Humidity (%)', 'Pressure (hPa)']]
-s101_tuples = list(s101_data.itertuples(index=False, name=None))
-print("\n=== Part I Results ===")
-print("Humidity and Pressure for S101:", s101_tuples)
-
-# Task 3: Allow user input to retrieve sensor readings
-sensor_id_input = input("\nEnter Sensor ID to view its readings (e.g., S101): ")
-sensor_readings = df[df['Sensor ID'] == sensor_id_input]
-print(f"\nSensor readings for {sensor_id_input}:")
-print(sensor_readings.head ())
-
-# Task 4: Identify and print the first 5 high-temperature readings
-high_temp_readings = df[df['Temperature (°C)'] > 30].nlargest(5, 'Temperature (°C)')
-print("\nFirst 5 high-temperature readings:")
-print(high_temp_readings)
-
-# =============================================
-# Part II: Temperature Conversion & Anomaly Detection
-# =============================================
-
-# Clean column names to avoid errors
-df.columns = df.columns.str.strip()
-
-
-def convert_temperature(temp):
-    return (temp * 9/5 + 32) if temp > 30 else (temp + 273.15)
-
-df['Converted Temperature'] = df['Temperature (°C)'].apply(convert_temperature)
-
-anomalies = df[(df['Temperature (°C)'] > 30) & (df['Humidity (%)'] > 70)]
-
-anomaly_counts = anomalies['Sensor ID'].value_counts()
-
-print("\n=== Part II Results ===")
-print("\nAnomaly Summary Per Sensor ID:\n")
-print(anomaly_counts.to_string())  # Ensures full output visibility
-
-
-# =============================================
-# Part III: Functions & User Interactions
-# =============================================
-
-def average_temperature(sensor_id):
-    return df[df['Sensor ID'] == sensor_id]['Temperature (°C)'].mean().round(2)
-
-def convert_pressure(hpa):
-    return round(hpa / 10000, 3)  # Convert hPa to MPa
-
-print("\n=== Part III Results ===")
-sensor_id = input("\nEnter Sensor ID for average temperature (e.g., S101): ")
-avg_temp = average_temperature(sensor_id)
-print(f"Average temperature for {sensor_id}: {avg_temp:.2f}°C")
-
-try:
-    index = int(input("\nEnter row index (0-{}): ".format(len(df)-1)))
-    pressure = df.loc[index, 'Pressure (hPa)']
-    print(f"Pressure in MPa: {convert_pressure(pressure)}")
-except (ValueError, IndexError) as e:
-    print(f"Invalid input: {e}")
-
-# # =============================================
-# # Part IV: Outlier Detection & Cleaning
-# # =============================================
-sensor_groups = df.groupby('Sensor ID')
-
-def remove_humidity_outliers(df):
-    q1 = df['Humidity (%)'].quantile(0.25)
-    q3 = df['Humidity (%)'].quantile(0.75)
-    iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
-    return df[(df['Humidity (%)'] >= lower_bound) & (df['Humidity (%)'] <= upper_bound)]
-
-clean_df = pd.concat([remove_humidity_outliers(group) for _, group in sensor_groups])
-
-print("\n=== Part IV Results ===")
-print(f"Original data count: {len(df)}")
-print(f"Cleaned data count: {len(clean_df)}")
-print(f"Removed outliers: {len(df) - len(clean_df)}")
-
-# =============================================
-# Part V: Data Visualization & Analysis
-# =============================================
+time_col = 'Timestamp'
+if 'Timestamp' in df.columns:
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+elif 'Time' in df.columns:
+    df['Time'] = pd.to_datetime(df['Time'])
+    time_col = 'Time'
+else:
+    print("No timestamp column found!")
 
 plt.figure(figsize=(15, 10))
 
 plt.subplot(2,2,1)
-sns.lineplot(x='Timestamp', y='Temperature (°C)', data=df)
-plt.title('Temperature Trends Over Time')
-
+sns.lineplot(x=df[time_col], y=df['PM2.5 (microg/m3)'])
+plt.title("PM2.5 vs Timestamps")
+plt.xticks(rotation=45)
 
 plt.subplot(2,2,2)
-sns.scatterplot(x='Temperature (°C)', y='Humidity (%)', data=df, hue='Sensor ID')
-plt.title('Temperature vs Humidity')
+sns.scatterplot(x=df['PM2.5 (microg/m3)'], y=df['PM10 (microg/m3)'])
+plt.title("PM2.5 vs PM10")
 
 plt.subplot(2,2,3)
-corr_matrix = df[['Temperature (°C)', 'Humidity (%)', 'Pressure (hPa)']].corr()
-sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
-plt.title('Correlation Heatmap')
+corr_matrix = df[['PM2.5 (microg/m3)', 'PM10 (microg/m3)', 'CO (ppm)']].corr()
+sns.heatmap(corr_matrix, cmap='coolwarm', annot=True)
+plt.title("Correlation Heatmap")
 
 plt.subplot(2,2,4)
-sns.kdeplot(df['Humidity (%)'], fill=True)
-plt.title('Humidity Density Estimation')
+sns.kdeplot(x=df['PM2.5 (microg/m3)'].dropna(), fill=True)
+plt.title("PDF of PM2.5")
 
-plt.tight_layout() 
+
+plt.tight_layout()
 plt.show()
-
