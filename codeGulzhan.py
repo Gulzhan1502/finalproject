@@ -37,20 +37,23 @@ print(high_temp_readings)
 # Part II: Temperature Conversion & Anomaly Detection
 # =============================================
 
+# Clean column names to avoid errors
+df.columns = df.columns.str.strip()
+
+
 def convert_temperature(temp):
-    if temp > 30:
-        return round((temp * 9/5) + 32, 2)  # Fahrenheit
-    else:
-        return round(temp + 273.15, 2)  # Kelvin
+    return (temp * 9/5 + 32) if temp > 30 else (temp + 273.15)
 
-df['Converted Temp'] = df['Temperature (°C)'].apply(convert_temperature)
+df['Converted Temperature'] = df['Temperature (°C)'].apply(convert_temperature)
 
-df['Anomaly'] = (df['Temperature (°C)'] > 30) | (df['Humidity (%)'] > 70)
-anomaly_counts = df.groupby('Sensor ID')['Anomaly'].sum()
+anomalies = df[(df['Temperature (°C)'] > 30) & (df['Humidity (%)'] > 70)]
+
+anomaly_counts = anomalies['Sensor ID'].value_counts()
 
 print("\n=== Part II Results ===")
-print("\nAnomaly Counts per Sensor:")
-print(anomaly_counts)
+print("\nAnomaly Summary Per Sensor ID:\n")
+print(anomaly_counts.to_string())  # Ensures full output visibility
+
 
 # =============================================
 # Part III: Functions & User Interactions
@@ -120,3 +123,4 @@ plt.title('Humidity Density Estimation')
 
 plt.tight_layout() 
 plt.show()
+
