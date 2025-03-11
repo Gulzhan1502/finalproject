@@ -1,17 +1,19 @@
-#part 1
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
 
-#1 read air quality data
-file_path="air_quality_data.csv"
-df=pd.read_csv(file_path)
-#2 store CO levels for sensor ID A103 as lists
-#3Allow user input to retrieve sensor readings for a given sensor
-sensor_id=input("Enter Sensor ID:")
+# 1. Read air quality data
+file_path = "air_quality_data.csv"
+df = pd.read_csv(file_path)
 
-#4Identify and print the mean value for CO level readings
+# 2. Store CO levels for Sensor ID A103 as a list and print
+a103_co = df[df['Sensor ID'] == 'A103']['CO (ppm)'].tolist()
+print("CO levels for A103 sensor:", a103_co)
 
+# 3. User input for sensor data retrieval
+sensor_id = input("\nEnter Sensor ID to view readings (e.g., A101): ")
+sensor_readings = df[df['Sensor ID'] == sensor_id]
+print(f"\nSensor readings for {sensor_id}:")
+print(sensor_readings.head())  # Shows first 5 entries
 
-
+# 4. Calculate and print mean CO level
+mean_co = df['CO (ppm)'].mean()
+print(f"\nMean CO level across all sensors: {mean_co:.2f} ppm")
